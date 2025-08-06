@@ -1,20 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flappy Bird</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Flappy Bird - Custom</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #87ceeb, #ffffff);
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background-image: url('https://i.imgur.com/Qr44Ywa.png'); /* Cloudy bg */
+      background-size: cover;
+    }
+    #playButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 30px;
+      padding: 10px 20px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 2;
+    }
+    #scoreboard {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      color: white;
+      font-size: 20px;
+      font-family: Arial, sans-serif;
+      z-index: 2;
+      background: rgba(0,0,0,0.3);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-  <div class="game-container">
-    <h1>Flappy Bird</h1>
-    <canvas id="gameCanvas" width="320" height="480"></canvas>
-    <p>Score: <span id="score">0</span> | High Score: <span id="highScore">0</span></p>
-    <button onclick="location.reload()">Restart</button>
-  </div>
+  <button id="playButton">Play</button>
+  <div id="scoreboard">Score: 0 | High: 0</div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <audio id="jumpSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const playBtn = document.getElementById("playButton");
+    const scoreboard = document.getElementById("scoreboard");
+    const jumpSound = document.getElementById("jumpSound");
 
-  <audio id="jumpSound" src="beep.mp3" preload="auto"></audio>
-  <script src="script.js"></script>
+    let bird = { x: 50, y: 150, width: 30, height: 30, velocity: 0 };
+    let gravity = 0.4;
+    let jump = -6;
+    let pipes = [];
+    let gap = 160;
+    let pipeWidth = 50;
+    let pipeSpeed = 2;
+    let score = 0;
+    let highScore = 0;
+    let gameRunning = false;
+
+    const birdImage = new Image();
+    birdImage.src = 'https://i.imgur.com/vkPBBzU.png'; // Red bird image
+
+    function resetGame() {
+      bird.y = 150;
+      bird.velocity = 0;
+      pipes = [];
+      score = 0;
+      gameRunning = true;
+    }
+
+    function drawBird() {
+      ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
+    }
+
+    function drawPipe(pipe) {
+      ctx.fillStyle = "#ff4c4c";
+      ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+      ctx.fillRect(pipe.x, pipe.top + gap, pipeWidth, canvas.height);
+    }
+
+    function updateGame() {
+      if (!gameRunning) return;
+
+      bird.velocity += gravity;
+      bird.y += bird.velocity;
+
+      if (bird.y + bird.height > canvas.height || bird.y < 0) {
+        gameOver();
+      }
+
+      pipes.forEach(pipe => {
+        pipe.x -= pipeSpeed;
+        if (pipe.x + pipeWidth < 0) {
+          pipes.splice(pipes.indexOf(pipe), 1);
+          return;
+        }
+
+        if (!pipe.passed && pipe.x + pipeWidth < bird.x) {
+          score++;
+          pipe.passed = true;
+          updateScore();
+        }
+
+        if (
+          bird.x < pipe.x + pipeWidth &&
+          bird.x + bird.width > pipe.x &&
+          (bird.y < pipe.top || bird.y + bird.height > pipe.top + gap)
+        ) {
+          gameOver();
+        }
+      });
+
+      if (frames % 100 === 0) {
+        const topHeight = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+        pipes.push({ x: canvas.width, top: topHeight, passed: false });
+      }
+
+      frames++;
+    }
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBird();
+      pipes.forEach(drawPipe);
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      if (score > highScore) highScore = score;
+      updateScore();
+      playBtn.style.display = "block";
+      playBtn.textContent = `Game Over - Score: ${score} | Play Again`;
+    }
+
+    function updateScore() {
+      scoreboard.textContent = `Score: ${score} | High: ${highScore}`;
+    }
+
+    function gameLoop() {
+      updateGame();
+      drawGame();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function flap() {
+      if (!gameRunning) return;
+      bird.velocity = jump;
+      jumpSound.currentTime = 0;
+      jumpSound.play();
+    }
+
+    canvas.addEventListener("touchstart", flap);
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") flap();
+    });
+
+    playBtn.onclick = () => {
+      resetGame();
+      updateScore();
+      playBtn.style.display = "none";
+    };
+
+    let frames = 0;
+    gameLoop();
+  </script>
 </body>
 </html>
