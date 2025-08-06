@@ -1,16 +1,1 @@
-body {
-  margin: 0;
-  font-family: sans-serif;
-  text-align: center;
-  background: #ff4d4d;
-  color: white;
-}
 
-.game-container {
-  padding-top: 20px;
-}
-
-canvas {
-  border: 2px solid #fff;
-  background-color: #87CEEB;
-}
